@@ -1,0 +1,15 @@
+torch
+torchvision
+timm
+peft
+numpy
+pandas
+scipy
+scikit-learn
+Pillow
+tqdm
+tensorboardX
+matplotlib
+einops
+transformers
+wandb

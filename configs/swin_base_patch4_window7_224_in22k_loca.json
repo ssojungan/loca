@@ -1,0 +1,6 @@
+{
+  "cub2011": {"lr": 0.001, "weight_decay": 0.0001, "epochs": 100, "warmup_epochs": 0},
+  "dogs": {"lr": 0.001, "weight_decay": 0.0001, "epochs": 100, "warmup_epochs": 0},
+  "cars": {"lr": 0.001, "weight_decay": 0.0001, "epochs": 100, "warmup_epochs": 0},
+  "nabirds": {"lr": 0.001, "weight_decay": 0.0001, "epochs": 100, "warmup_epochs": 0}
+}

@@ -9,3 +9,17 @@ venv/
 dist/
 build/
 .DS_Store
+data/
+checkpoints/
+experiments/
+outputs/
+runs/
+wandb/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.log
+*.doc
+*.docx
+*.pdf

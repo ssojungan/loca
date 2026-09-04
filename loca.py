@@ -216,7 +216,7 @@ class LoCAModel(nn.Module):
                 new_module.bias.data.copy_(old_module.bias.detach().to(device=new_module.bias.device, dtype=new_module.bias.dtype))
 
     def mark_only_lora_as_trainable(self):
-        trainable_keywords = ["lora_", "s_basis", "u_dw"]
+        trainable_keywords = ["lora_", "s_basis", "u_dw", "head"]
         for n, p in self.model.named_parameters():
             p.requires_grad = any(k in n for k in trainable_keywords)
 
