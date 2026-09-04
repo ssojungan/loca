@@ -120,7 +120,6 @@ class ConvAdapter(nn.Module):
         out = self.act(out)
         out = self.conv2(out)
         out = out * self.se
-        # TODO: add norm layer
 
         return out
     

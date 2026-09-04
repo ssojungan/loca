@@ -18,6 +18,8 @@ from tensorboardX import SummaryWriter
 
 logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
+
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
     window or the global series average.
@@ -238,12 +240,12 @@ def setup_for_distributed(is_master):
     import builtins as __builtin__
     builtin_print = __builtin__.print
 
-    def print(*args, **kwargs):
+    def rank0_print(*args, **kwargs):
         force = kwargs.pop('force', False)
         if is_master or force:
             builtin_print(*args, **kwargs)
 
-    __builtin__.print = print
+    __builtin__.print = rank0_print
 
 
 def is_dist_avail_and_initialized():
@@ -298,7 +300,7 @@ def init_distributed_mode(args):
         os.environ['LOCAL_RANK'] = str(args.gpu)
         os.environ['WORLD_SIZE'] = str(args.world_size)
     else:
-        print('Not using distributed mode')
+        logger.info('Not using distributed mode')
         args.distributed = False
         return
 
@@ -306,8 +308,12 @@ def init_distributed_mode(args):
 
     torch.cuda.set_device(args.gpu)
     args.dist_backend = 'nccl'
-    print('| distributed init (rank {}): {}, gpu {}'.format(
-        args.rank, args.dist_url, args.gpu), flush=True)
+    logger.info(
+        '| distributed init (rank %s): %s, gpu %s',
+        args.rank,
+        args.dist_url,
+        args.gpu,
+    )
     torch.distributed.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                          world_size=args.world_size, rank=args.rank)
     torch.distributed.barrier()
@@ -351,16 +357,25 @@ def load_state_dict(model, state_dict, prefix='', ignore_missing="relative_posit
     missing_keys = warn_missing_keys
 
     if len(missing_keys) > 0:
-        print("Weights of {} not initialized from pretrained model: {}".format(
-            model.__class__.__name__, missing_keys))
+        logger.info(
+            "Weights of %s not initialized from pretrained model: %s",
+            model.__class__.__name__,
+            missing_keys,
+        )
     if len(unexpected_keys) > 0:
-        print("Weights from pretrained model not used in {}: {}".format(
-            model.__class__.__name__, unexpected_keys))
+        logger.info(
+            "Weights from pretrained model not used in %s: %s",
+            model.__class__.__name__,
+            unexpected_keys,
+        )
     if len(ignore_missing_keys) > 0:
-        print("Ignored weights of {} not initialized from pretrained model: {}".format(
-            model.__class__.__name__, ignore_missing_keys))
+        logger.info(
+            "Ignored weights of %s not initialized from pretrained model: %s",
+            model.__class__.__name__,
+            ignore_missing_keys,
+        )
     if len(error_msgs) > 0:
-        print('\n'.join(error_msgs))
+        logger.warning('\n'.join(error_msgs))
 
 
 class NativeScalerWithGradNormCount:
@@ -413,7 +428,7 @@ def cosine_scheduler(base_value, final_value, epochs, niter_per_ep, warmup_epoch
     warmup_iters = warmup_epochs * niter_per_ep
     if warmup_steps > 0:
         warmup_iters = warmup_steps
-    print("Set warmup steps = %d" % warmup_iters)
+    logger.info("Set warmup steps = %d", warmup_iters)
     if warmup_epochs > 0:
         warmup_schedule = np.linspace(start_warmup_value, base_value, warmup_iters)
 
@@ -463,7 +478,7 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
                 latest_ckpt = max(int(t), latest_ckpt)
         if latest_ckpt >= 0:
             args.resume = os.path.join(output_dir, 'checkpoint-%d.pth' % latest_ckpt)
-        print("Auto resume checkpoint: %s" % args.resume)
+        logger.info("Auto resume checkpoint: %s", args.resume)
 
     if args.resume:
         if args.resume.startswith('https'):
@@ -472,7 +487,7 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
         else:
             checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
-        print("Resume checkpoint %s" % args.resume)
+        logger.info("Resume checkpoint %s", args.resume)
         if 'optimizer' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             if not isinstance(checkpoint['epoch'], str): # does not support resuming with 'best', 'best-ema'
@@ -486,7 +501,7 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
                     model_ema.ema.load_state_dict(checkpoint['model'])
             if 'scaler' in checkpoint:
                 loss_scaler.load_state_dict(checkpoint['scaler'])
-            print("With optim & sched!")
+            logger.info("Loaded optimizer and scaler state.")
     
 
 def over_write_args_from_dict(args, dict):
@@ -494,7 +509,7 @@ def over_write_args_from_dict(args, dict):
     overwrite arguments acocrding to config file
     """
     for k in dict:
-        print(f"overwrite {k} from {getattr(args, k)} to optimal {dict[k]}")
+        logger.info("overwrite %s from %s to %s", k, getattr(args, k), dict[k])
         setattr(args, k, dict[k])
 
 

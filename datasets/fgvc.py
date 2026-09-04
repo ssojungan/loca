@@ -1,7 +1,6 @@
-# TODO: add fgvc datasets
-
 import os
 import json
+import logging
 from os.path import join
 # import cv2
 import numpy as np
@@ -15,6 +14,8 @@ from torchvision.datasets.utils import download_url, list_dir
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset
+
+logger = logging.getLogger(__name__)
 
 
 class CUB2011(Dataset):
@@ -114,7 +115,7 @@ class CarsDataset(Dataset):
 
         if cleaned is not None:
             cleaned_annos = []
-            print("Cleaning up data set (only take pics with rgb chans)...")
+            logger.info("Cleaning up data set with RGB-only image list.")
             clean_files = np.loadtxt(cleaned, dtype=str)
             for c in self.car_annotations:
                 if c[-1][0] in clean_files:
@@ -392,14 +393,14 @@ class DogsDataset(Dataset):
 
         if os.path.exists(join(self.root, 'Images')) and os.path.exists(join(self.root, 'Annotation')):
             if len(os.listdir(join(self.root, 'Images'))) == len(os.listdir(join(self.root, 'Annotation'))) == 120:
-                print('Files already downloaded and verified')
+                logger.info('Files already downloaded and verified')
                 return
 
         for filename in ['images', 'annotation', 'lists']:
             tar_filename = filename + '.tar'
             url = self.download_url_prefix + '/' + tar_filename
             download_url(url, self.root, tar_filename, None)
-            print('Extracting downloaded file: ' + join(self.root, tar_filename))
+            logger.info('Extracting downloaded file: %s', join(self.root, tar_filename))
             with tarfile.open(join(self.root, tar_filename), 'r') as tar_file:
                 tar_file.extractall(self.root)
             os.remove(join(self.root, tar_filename))
@@ -443,7 +444,12 @@ class DogsDataset(Dataset):
             else:
                 counts[target_class] += 1
 
-        print("%d samples spanning %d classes (avg %f per class)"%(len(self._flat_breed_images), len(counts.keys()), float(len(self._flat_breed_images))/float(len(counts.keys()))))
+        logger.info(
+            "%d samples spanning %d classes (avg %f per class)",
+            len(self._flat_breed_images),
+            len(counts.keys()),
+            float(len(self._flat_breed_images)) / float(len(counts.keys())),
+        )
 
         return counts
 

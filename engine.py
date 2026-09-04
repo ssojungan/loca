@@ -72,11 +72,6 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         else: # full precision
             loss /= update_freq
             loss.backward()
-
-            # for name, param in model.named_parameters():
-            #     if param.grad is None and param.requires_grad:
-            #         print(name)
-
             if (data_iter_step + 1) % update_freq == 0:
                 optimizer.step()
                 optimizer.zero_grad()
