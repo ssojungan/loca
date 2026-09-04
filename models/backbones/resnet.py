@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from ..tuning_modules import PadPrompter, ConvAdapter, LinearAdapter, ProgramModule
+from ..tuning_modules import PadPrompter, ConvAdapter
 
 __all__ = [
     'resnet50',
@@ -308,61 +308,15 @@ class ResNet(nn.Module):
         if self.tuning_config['method'] == 'prompt':
             x = self.tuning_module(x)
         
-        if 'repnet' in self.tuning_config['method']:
-            side_x = self.tuning_module_pool(x) 
-            side_x = self.tuning_module[0](side_x) 
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
 
-            x = self.conv1(x)
-            x = self.bn1(x)
-            x = self.relu(x)
-            x = self.maxpool(x)
-
-            x = x + side_x
-
-            for i in range(len(self.layer1)):
-                if i == 0:
-                    main_x = self.layer1[i](x)
-                    side_x = self.tuning_module[1](x)
-                    x = main_x + side_x
-                    x+=side_x
-                else:
-                    x = self.layer1[i](x)
-
-            for i in range(len(self.layer2)):
-                if i == 0:
-                    main_x = self.layer2[i](x)
-                    side_x = self.tuning_module[2](x)
-                    x = main_x + side_x
-                else:
-                    x = self.layer2[i](x)
-            for i in range(len(self.layer3)):
-                if i == 0:
-                    main_x = self.layer3[i](x)
-                    side_x = self.tuning_module[3](x)
-                    x = main_x + side_x
-                else:                
-                    x = self.layer3[i](x)
-            for i in range(len(self.layer4)):
-                if i == 0:
-                    main_x = self.layer4[i](x)
-                    side_x = self.tuning_module[4](x)
-                    x = main_x + side_x
-                elif i == 2:
-                    main_x = self.layer4[i](x)
-                    side_x = self.tuning_module[5](x)
-                    x = main_x + side_x                
-                else:  
-                    x = self.layer4[i](x)
-        else:
-            x = self.conv1(x)
-            x = self.bn1(x)
-            x = self.relu(x)
-            x = self.maxpool(x)
-
-            x = self.layer1(x)
-            x = self.layer2(x)
-            x = self.layer3(x)
-            x = self.layer4(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
 
         x = self.norm(x)
         x = self.avgpool(x)

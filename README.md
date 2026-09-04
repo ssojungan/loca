@@ -6,11 +6,13 @@ This repository provides the PyTorch implementation and classification training 
 
 LoCA is a convolution-aware parameter-efficient fine-tuning method for vision foundation models. It decouples channel and spatial adaptation for convolutional kernels, preserving spatial priors while training a small number of adapter parameters.
 
+The classification scaffold follows the organization of [Conv-Adapter](https://github.com/Hhhhhhao/Conv-Adapter): dataset builders, model builders, `engine.py`, `main.py`, and `utils.py`. The adapter implementation and LoCA-specific training paths are maintained here.
+
 ## Repository Contents
 
 - `loca.py`: standalone LoCA module wrappers for linear and convolutional layers.
 - `models/`: backbone, head, and tuning-module implementations.
-- `datasets/`: FGVC, VTAB-1K, ImageNet-style, and few-shot dataset builders.
+- `datasets/`: FGVC, VTAB-1K, and ImageNet-style dataset builders.
 - `configs/`: optional per-model optimizer defaults loaded by `main.py`.
 - `scripts/train.sh`: configurable LoCA classification training entrypoint.
 - `scripts/eval.sh`: configurable evaluation entrypoint.
@@ -18,9 +20,8 @@ LoCA is a convolution-aware parameter-efficient fine-tuning method for vision fo
 ## Supported Backbones
 
 - ConvNeXt: `convnext_tiny`, `convnext_small`, `convnext_base`, `convnext_large`, `convnext_base_22k`
-- ResNet: `resnet50`, `resnet101`, `resnet152`, `resnet50_bit_m`, `resnet50_clip`
+- ResNet: `resnet50`, `resnet101`, `resnet152`
 - Swin Transformer: `swin_base_patch4_window7_224`, `swin_base_patch4_window7_224_in22k`
-- EfficientNetV2: `tf_efficientnetv2_s_in21k`, `tf_efficientnetv2_m_in21k`, `tf_efficientnetv2_l_in21k`
 - DINOv3/timm wrappers: `dinov3_vit_base`, `dinov3_convnext_base`
 - Mamba models: `mambaout_base`, `mambavision_tiny`, `mambavision_small`, `mambavision_base`
 
@@ -51,7 +52,7 @@ MODEL=swin_base_patch4_window7_224_in22k GPUS=0,1 NUM_GPUS=2 bash scripts/train.
 Important options:
 
 - `MODEL`: backbone name.
-- `DATA`: dataset family, such as `fgvc`, `vtab-1k`, `imagenet-1k`, or `few-shot`.
+- `DATA`: dataset family, such as `fgvc`, `vtab-1k`, or `imagenet-1k`.
 - `DATASET`: dataset name inside the selected family.
 - `DATA_PATH`: dataset root.
 - `LR`, `WEIGHT_DECAY`, `EPOCHS`, `BATCH_SIZE`: optimizer and training controls.

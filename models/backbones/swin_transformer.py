@@ -7,7 +7,7 @@ import torch.nn as nn
 # from timm.models.helpers import checkpoint_seq
 from timm.models.layers import PatchEmbed, Mlp, DropPath, to_2tuple, to_ntuple, trunc_normal_, _assert
 
-from ..tuning_modules import PadPrompter, ConvAdapter, LinearAdapter, ProgramModule
+from ..tuning_modules import ConvAdapter
 
 
 __all__ = [
@@ -570,5 +570,4 @@ def swin_large_patch4_window7_224_in22k(pretrained=False, **kwargs):
         checkpoint = torch.hub.load_state_dict_from_url(url=url, map_location="cpu", check_hash=True)
         keys = model.load_state_dict(checkpoint["model"], strict=False)
     return model
-
 

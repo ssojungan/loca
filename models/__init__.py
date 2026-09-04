@@ -7,11 +7,6 @@ from .backbones import *
 from .heads import *
 from .tuning_modules import set_tuning_config
 from .layers.ws_conv import WSConv2d
-#from .tuning_modules.soma import LoRAConv2d, LoRALinear, apply_lora_svd
-#from .tuning_modules.soma_v6 import LoracoModel
-from .tuning_modules.loraconv import LoraconvModel
-from .tuning_modules.loraco import LoracoModel
-from .tuning_modules.lora import LoraModel
 from .tuning_modules.loca import LoCAModel
 
 __all__ = ['build_model']
@@ -63,23 +58,11 @@ def build_model(model_name, pretrained=True, num_classes=1000, input_size=224, t
     else:
         model.head = LinearHead(model.num_features, num_classes, 0.2)
 
-    if tuning_method == 'loraco':
-        loraco_config = tuning_config['loraco_config']
-        model = LoracoModel(loraco_config, model)
-    elif tuning_method == 'colora':
-        # CoLoRA: backbone is ConvNeXtPEFT; it already freezes non-LoRA and sets head trainable
-        pass
-    elif tuning_method == 'loraconv':
-        loraconv_config = tuning_config['loraconv_config']
-        model = LoraconvModel(loraconv_config, model)
-    elif tuning_method == 'loca':
+    if tuning_method == 'loca':
         loca_config = tuning_config['loca_config']
         model = LoCAModel(loca_config, model)
-    elif tuning_method == 'lora':
-        lora_config = tuning_config['loraconv_config']
-        model = LoraModel(lora_config, model)
 
-    elif tuning_method == 'conv_adapt' or tuning_method == 'repnet':
+    elif tuning_method == 'conv_adapt':
         for name, param in model.named_parameters():
             if name.startswith('head'):
                 continue
@@ -114,7 +97,7 @@ def build_model(model_name, pretrained=True, num_classes=1000, input_size=224, t
                 continue
 
             param.requires_grad = False    
-    elif tuning_method == 'conv_adapt_bias' or tuning_method == 'repnet_bias':
+    elif tuning_method == 'conv_adapt_bias':
         for name, param in model.named_parameters():
             if name.startswith('head'):
                 continue
@@ -152,15 +135,6 @@ def build_model(model_name, pretrained=True, num_classes=1000, input_size=224, t
     elif tuning_method == 'prompt':
         for n, p in model.named_parameters():
             if n.startswith('head') or 'tuning_module' in n or n.startswith('norm'):
-                p.requires_grad = True
-            else:
-                p.requires_grad = False
-
-    elif tuning_method == 'test':
-        for n, p in model.named_parameters():
-            # Only all Linear layers (pwconv1, pwconv2) are trainable
-            #if 'stages.3.' in n and ('pwconv1' in n or 'pwconv2' in n):
-            if 'pwconv1' in n or 'pwconv2' in n:
                 p.requires_grad = True
             else:
                 p.requires_grad = False

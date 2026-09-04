@@ -26,10 +26,9 @@ import utils
 
 
 def _get_weight_tensor_for_svd(module):
-    """Extract weight or LoRA delta for SVD. Returns 2D/4D tensor or (None, False)."""
+    """Extract weight or adapter delta for SVD. Returns 2D/4D tensor or (None, False)."""
     cand = None
 
-    # 1) _delta_weight() (loraconv 등)
     if hasattr(module, "_delta_weight"):
         try:
             dW = module._delta_weight().detach().float()
@@ -45,7 +44,6 @@ def _get_weight_tensor_for_svd(module):
         except Exception:
             pass
 
-    # 2) lora_A/lora_B (lora.py) 또는 lora_a/lora_b (loraconv): B@A delta 사용
     if cand is None:
         A, B = (module.lora_A, module.lora_B) if hasattr(module, "lora_A") and hasattr(module, "lora_B") else (
             (module.lora_a, module.lora_b) if hasattr(module, "lora_a") and hasattr(module, "lora_b") else (None, None)
@@ -59,7 +57,6 @@ def _get_weight_tensor_for_svd(module):
                     try:
                         delta = delta.view(target_shape)
                     except Exception:
-                        # lora.py depthwise: B@A shape (out_c//g*kh, in_c*kh) 등 → numel = out_c*(in_c//g)*kh*kw
                         out_c, in_c = conv.out_channels, conv.in_channels
                         g, kh, kw = conv.groups, target_shape[2], target_shape[3]
                         need = out_c * (in_c // max(g, 1)) * kh * kw
@@ -74,7 +71,6 @@ def _get_weight_tensor_for_svd(module):
             except Exception:
                 pass
 
-    # 3) 일반 weight / conv.weight (LoRA 아닐 때만)
     if cand is None and getattr(module, "weight", None) is not None:
         w = module.weight.detach().float()
         if w.dim() in (2, 4):
@@ -206,17 +202,17 @@ def str2bool(v):
 def get_args_parser():
     parser = argparse.ArgumentParser('Parameter Efficient Tuning', add_help=False)
     
-    parser.add_argument('--tuning_method', type=str, default='prompt')
+    parser.add_argument('--tuning_method', type=str, default='loca')
 
     parser.add_argument('--prompt_size', default=10, type=int, help='prompt size')
     parser.add_argument('--kernel_size', default=3, type=int)
     parser.add_argument('--adapt_size', default=8, type=float)
     parser.add_argument('--adapt_scale', default=1.0, type=float)
 
-    parser.add_argument('--lora_rank', default=16, type=int, help='LoRA rank')
-    parser.add_argument('--lora_alpha', default=16.0, type=float, help='LoRA alpha')
-    parser.add_argument('--lora_target', default='mlp', type=str, help='LoRA target layers')
-    parser.add_argument('--type', default='loraco', type=str, help='LoRA type (loraco, sora, etc.)')
+    parser.add_argument('--lora_rank', default=16, type=int, help='LoCA adapter rank')
+    parser.add_argument('--lora_alpha', default=16.0, type=float, help='LoCA adapter alpha')
+    parser.add_argument('--lora_target', default='mlp', type=str, help='Target module names for LoCA adapters')
+    parser.add_argument('--type', default='loca', type=str, help='Adapter type')
 
     parser.add_argument('--batch_size', default=64, type=int,
                         help='Per GPU batch size')
@@ -224,10 +220,8 @@ def get_args_parser():
     parser.add_argument('--update_freq', default=1, type=int,
                         help='gradient accumulation steps')
 
-    parser.add_argument('--fs_shot', default=16, type=int)
-
     # Model parameters
-    parser.add_argument('--model', default='resnet50_clip', type=str, metavar='MODEL',
+    parser.add_argument('--model', default='convnext_base', type=str, metavar='MODEL',
                         help='Name of model to train')
     parser.add_argument('--drop_path', type=float, default=0, metavar='PCT',
                         help='Drop path rate (default: 0.0)')
@@ -326,7 +320,7 @@ def get_args_parser():
     parser.add_argument('--is_tuning', default=False, type=str2bool, help='Hyperparameter Tuning Mode')
     parser.add_argument('--data', default='vtab-1k', type=str, help='dataset name')
     parser.add_argument('--dataset', default='stanford_cars', type=str, help='dataset name')
-    parser.add_argument('--data_path', default='/media/Auriga/Parameter_Efficient/data/few-shot/stanford_cars', type=str,
+    parser.add_argument('--data_path', default='/home/dataset/fgvc/cars', type=str,
                         help='dataset path')
     parser.add_argument('--eval_data_path', default=None, type=str,
                         help='dataset path for evaluation')

@@ -5,7 +5,6 @@ from timm.data import create_transform
 
 from .vtab import VTABDataset
 from .fgvc import CUB2011, NABirds, DogsDataset, CarsDataset
-from .fewshot import FewShotDataset
 
 
 def build_transform(args, is_train):
@@ -35,7 +34,7 @@ def build_transform(args, is_train):
                 transform.transforms[0] = transforms.Compose([
                     transforms.Resize((args.input_size,args.input_size), interpolation=3),
                 ])
-        elif args.data == 'fgvc' or args.data == 'clip' or args.data == 'few-shot' or args.data == 'imagenet-1k':
+        elif args.data == 'fgvc' or args.data == 'imagenet-1k':
             transform = create_transform(
                 input_size=args.input_size,
                 is_training=True,
@@ -155,41 +154,11 @@ def build_dataset(args, is_train=True):
             nb_classes = 700
         else:
             raise NotImplementedError(f"Dataset '{args.dataset}' not implemented for data type 'fgvc'")
-    elif args.data == 'clip':
-        if args.dataset == 'cifar100':
-            dataset = datasets.CIFAR100(args.data_path, train=is_train, transform=transform, download=True)
-            nb_classes = 100
-        elif args.dataset == 'cifar10':
-            dataset = datasets.CIFAR10(args.data_path, train=is_train, transform=transform, download=True)
-            nb_classes = 10
-        elif args.dataset == 'flowers':
-            dataset = datasets.Flowers102(args.data_path, split='train' if is_train else 'test', transform=transform, download=True)
-            nb_classes = 102
-        elif args.dataset == 'food':
-            dataset = datasets.Food101(args.data_path, split='train' if is_train else 'test', transform=transform,download=True)
-            nb_classes = 101
-        elif args.dataset == 'eurasat':
-            dataset = datasets.EuroSAT(args.data_path, split='train' if is_train else 'test', transform=transform,download=True)
-            nb_classes = 101
     elif args.data == 'imagenet-1k':
         split = 'train' if is_train else 'val'
         dataset = datasets.ImageFolder(f'{args.data_path}/{split}', transform=transform)
         nb_classes = 1000
-    elif args.data == 'few-shot':
-        dataset = FewShotDataset(args.data_path, train=is_train, transform=transform, is_tuning=args.is_tuning, shot=args.fs_shot, seed=args.seed)
-        if args.dataset == 'fgvc_aircraft':
-            nb_classes = 100
-        elif args.dataset == 'oxford_flowers102':
-            nb_classes = 102
-        elif args.dataset == 'food101':
-            nb_classes = 101
-        elif args.dataset == 'stanford_cars':
-            nb_classes = 196
-        elif args.dataset == 'oxford_pets':
-            nb_classes = 37
-        else:
-            raise NotImplementedError(f"Dataset '{args.dataset}' not implemented for data type '{args.data}'")
     else:
-        raise NotImplementedError(f"Data type '{args.data}' not implemented. Supported types: 'vtab-1k', 'fgvc', 'clip', 'few-shot', 'imagenet-1k'")
+        raise NotImplementedError(f"Data type '{args.data}' not implemented. Supported types: 'vtab-1k', 'fgvc', 'imagenet-1k'")
 
     return dataset, nb_classes
