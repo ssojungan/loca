@@ -1,80 +1,122 @@
-# LoCA: Spatially-Aware Low-Rank Convolutional Adaptation
+<div align="center">
 
-[Paper](https://arxiv.org/abs/2607.06918) · [PDF](https://arxiv.org/pdf/2607.06918)
+# LoCA
 
-This repository provides the PyTorch implementation and classification training code for **LoCA: Spatially-Aware Low-Rank Convolutional Adaptation of Vision Foundation Models**, accepted to **ECCV 2026**.
+### Spatially-Aware Low-Rank Convolutional Adaptation of Vision Foundation Models
 
-LoCA is a convolution-aware parameter-efficient fine-tuning method for vision foundation models. It decouples channel and spatial adaptation for convolutional kernels, preserving spatial priors while training a small number of adapter parameters.
+Sojung An · Junha Lee · Sujeong You · Nam Ik Cho · Donghyun Kim
 
-The classification scaffold follows the organization of [Conv-Adapter](https://github.com/Hhhhhhao/Conv-Adapter): dataset builders, model builders, `engine.py`, `main.py`, and `utils.py`. The adapter implementation and LoCA-specific training paths are maintained here.
+**Accepted to ECCV 2026**
 
-## Repository Contents
+[![ECCV 2026](https://img.shields.io/badge/ECCV-2026-365B9A)](https://link.springer.com/chapter/10.1007/978-3-032-37464-6_27)
+[![Paper](https://img.shields.io/badge/Paper-Springer-00599C)](https://link.springer.com/chapter/10.1007/978-3-032-37464-6_27)
+[![arXiv](https://img.shields.io/badge/arXiv-2607.06918-B31B1B)](https://arxiv.org/abs/2607.06918)
 
-- `loca.py`: standalone LoCA module wrappers for linear and convolutional layers.
-- `models/`: backbone, head, and tuning-module implementations.
-- `datasets/`: FGVC, VTAB-1K, and ImageNet-style dataset builders.
-- `configs/`: optional per-model optimizer defaults loaded by `main.py`.
-- `scripts/train.sh`: configurable LoCA classification training entrypoint.
-- `scripts/eval.sh`: configurable evaluation entrypoint.
+[Overview](#overview) · [Get started](#get-started) · [Backbones](#supported-backbones) · [Training](#training) · [Evaluation](#evaluation) · [Citation](#citation)
 
-## Supported Backbones
+</div>
 
-- ConvNeXt: `convnext_tiny`, `convnext_small`, `convnext_base`, `convnext_large`, `convnext_base_22k`
-- ResNet: `resnet50`, `resnet101`, `resnet152`
-- Swin Transformer: `swin_base_patch4_window7_224`, `swin_base_patch4_window7_224_in22k`
-- DINOv3/timm wrappers: `dinov3_vit_base`, `dinov3_convnext_base`
-- Mamba models: `mambaout_base`, `mambavision_tiny`, `mambavision_small`, `mambavision_base`
+## Overview
 
-## Installation
+**LoCA** is a parameter-efficient fine-tuning method for vision foundation models. It adapts convolutional kernels through two complementary paths: a low-rank update for cross-channel mixing and refinement of spatial bases derived from the pretrained kernels by singular value decomposition (SVD). This separation preserves spatial information that can be lost when a convolutional kernel is flattened into a single matrix for standard LoRA.
+
+| Channel adaptation | Spatial adaptation | Practical use |
+| :--- | :--- | :--- |
+| Low-rank cross-channel mixing | SVD-derived spatial basis refinement | Fine-tune vision backbones with a small set of adapter parameters |
+
+This repository provides the PyTorch LoCA implementation and classification training and evaluation scripts. The [ECCV 2026 paper](https://link.springer.com/chapter/10.1007/978-3-032-37464-6_27) also evaluates LoCA on domain-generalized semantic segmentation and generative benchmarks.
+
+## Repository map
+
+| Path | Purpose |
+| :--- | :--- |
+| [`loca.py`](loca.py) | Standalone LoCA wrappers for linear and convolutional layers |
+| [`models/`](models) | Backbone, head, and tuning-module implementations |
+| [`datasets/`](datasets) | FGVC, VTAB-1K, and ImageNet-style dataset builders |
+| [`configs/`](configs) | Optional model-specific optimizer defaults |
+| [`scripts/train.sh`](scripts/train.sh) | Classification training entry point |
+| [`scripts/eval.sh`](scripts/eval.sh) | Checkpoint evaluation entry point |
+
+## Supported backbones
+
+| Family | Model names |
+| :--- | :--- |
+| ConvNeXt | `convnext_tiny`, `convnext_small`, `convnext_base`, `convnext_large`, `convnext_base_22k` |
+| ResNet | `resnet50`, `resnet101`, `resnet152` |
+| Swin Transformer | `swin_base_patch4_window7_224`, `swin_base_patch4_window7_224_in22k` |
+| DINOv3 / timm | `dinov3_vit_base`, `dinov3_convnext_base` |
+| Mamba | `mambaout_base`, `mambavision_tiny`, `mambavision_small`, `mambavision_base` |
+
+## Get started
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/ssojungan/loca.git
+cd loca
+python -m pip install -r requirements.txt
 ```
 
-MambaVision requires `mamba-ssm` and its CUDA-compatible dependencies. Install the version that matches your PyTorch/CUDA environment.
+MambaVision models also require `mamba-ssm` and dependencies compatible with your PyTorch and CUDA installation.
 
 ## Training
 
-The default script runs LoCA on FGVC classification with ConvNeXt-base.
+The training script defaults to LoCA with `convnext_base` on the FGVC Cars dataset. Point `DATA_PATH` to your local dataset before running it:
 
 ```bash
-bash scripts/train.sh
+DATA_PATH=/path/to/fgvc/cars bash scripts/train.sh
 ```
 
-Common overrides:
+Select another supported model or dataset through environment variables:
 
 ```bash
-MODEL=mambavision_base DATA=fgvc DATASET=cars DATA_PATH=/home/dataset/fgvc/cars bash scripts/train.sh
-MODEL=convnext_base DATA=vtab-1k DATASET=svhn DATA_PATH=/home/dataset/vtab-1k/svhn bash scripts/train.sh
-MODEL=swin_base_patch4_window7_224_in22k GPUS=0,1 NUM_GPUS=2 bash scripts/train.sh
+MODEL=convnext_base DATA=vtab-1k DATASET=svhn \
+  DATA_PATH=/path/to/vtab-1k/svhn bash scripts/train.sh
+
+MODEL=mambavision_base DATA=fgvc DATASET=cars \
+  DATA_PATH=/path/to/fgvc/cars bash scripts/train.sh
 ```
 
-Important options:
+| Variable | Purpose | Script default |
+| :--- | :--- | :--- |
+| `MODEL` | Backbone name | `convnext_base` |
+| `DATA`, `DATASET`, `DATA_PATH` | Dataset family, name, and location | `fgvc`, `cars`, local path |
+| `LORA_RANK`, `LORA_ALPHA` | Adapter rank and scaling | `16`, `16.0` |
+| `LORA_TARGET` | Modules to adapt; chosen by model family when unset | Model-specific |
+| `EPOCHS`, `BATCH_SIZE`, `LR` | Training schedule | `100`, `64`, `0.001` |
+| `OUTPUT_DIR` | Checkpoint and log directory | `outputs/$MODEL/$DATA/$DATASET` |
+| `GPUS`, `NUM_GPUS` | Visible GPU IDs and process count | `0`, `1` |
 
-- `MODEL`: backbone name.
-- `DATA`: dataset family, such as `fgvc`, `vtab-1k`, or `imagenet-1k`.
-- `DATASET`: dataset name inside the selected family.
-- `DATA_PATH`: dataset root.
-- `LR`, `WEIGHT_DECAY`, `EPOCHS`, `BATCH_SIZE`: optimizer and training controls.
-- `LORA_TARGET`: JSON list or space-separated module names to adapt.
-- `SV_LAYERS`: JSON list or single module path for singular-value logging.
-- `SV_INTERVAL`: epoch interval for singular-value logging.
+For multi-GPU training, set `GPUS` and `NUM_GPUS` together. Optional singular-value logging is controlled by `SV_LAYERS` and `SV_INTERVAL` in [`scripts/train.sh`](scripts/train.sh).
 
 ## Evaluation
 
-```bash
-RESUME=outputs/convnext_base/fgvc/cars/checkpoint-best.pth bash scripts/eval.sh
-```
+Use the same model, dataset, and adapter settings as training. `RESUME` points to the checkpoint to evaluate:
 
-The evaluation script uses the same `MODEL`, `DATA`, `DATASET`, `DATA_PATH`, `LORA_TARGET`, and LoCA rank settings as training.
+```bash
+MODEL=convnext_base DATA=fgvc DATASET=cars \
+  DATA_PATH=/path/to/fgvc/cars \
+  RESUME=outputs/convnext_base/fgvc/cars/checkpoint-best.pth \
+  bash scripts/eval.sh
+```
 
 ## Citation
 
+If you use LoCA in your research, please cite the ECCV 2026 paper:
+
 ```bibtex
-@article{an2026loca,
-  title={LoCA: Spatially-Aware Low-Rank Convolutional Adaptation of Vision Foundation Models},
-  author={An, Sojung and Lee, Junha and You, Sujeong and Cho, Nam Ik and Kim, Donghyun},
-  journal={arXiv preprint arXiv:2607.06918},
-  year={2026}
+@InProceedings{10.1007/978-3-032-37464-6_27,
+  author    = {An, Sojung and Lee, Junha and You, Sujeong and Cho, Nam Ik and Kim, Donghyun},
+  editor    = {Favaro, Paolo and Kukelova, Zuzana and Maki, Atsuto and Rohrbach, Anna and Schindler, Konrad and Tombari, Federico},
+  title     = {LoCA: Spatially-Aware Low-Rank Convolutional Adaptation of Vision Foundation Models},
+  booktitle = {Computer Vision -- ECCV 2026},
+  year      = {2026},
+  publisher = {Springer Nature Switzerland},
+  address   = {Cham},
+  pages     = {500--519},
+  isbn      = {978-3-032-37464-6},
+  doi       = {10.1007/978-3-032-37464-6_27}
 }
 ```
+
+## Acknowledgments
+
+The classification training scaffold follows [Conv-Adapter](https://github.com/Hhhhhhao/Conv-Adapter). The LoCA adapter implementation and LoCA-specific training paths are maintained in this repository.
