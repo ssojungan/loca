@@ -120,3 +120,12 @@ If you use LoCA in your research, please cite the ECCV 2026 paper:
 ## Acknowledgments
 
 The classification training scaffold follows [Conv-Adapter](https://github.com/Hhhhhhao/Conv-Adapter). The LoCA adapter implementation and LoCA-specific training paths are maintained in this repository.
+
+## 💻 Environment
+
+- **GPU:** NVIDIA H100 (80GB)
+- All experiments and evaluations were conducted using AICA's NVIDIA H100 GPUs.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
